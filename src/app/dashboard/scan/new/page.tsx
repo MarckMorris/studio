@@ -24,8 +24,13 @@ export default function NewScanPage() {
   const onWebScanSubmit = (formData: FormData) => {
     setAiResult(null);
     setAiError(null);
+    const technicalDescription = formData.get('technical-description') as string;
+    console.log("New Scan Form Submitted. Technical Description:", technicalDescription);
+
     startTransition(async () => {
+      console.log("Calling handleWebScanAction...");
       const result = await handleWebScanAction(formData);
+      console.log("Received result from handleWebScanAction:", result);
       if ('error' in result) {
         setAiError(result.error);
         toast({
@@ -77,6 +82,7 @@ export default function NewScanPage() {
                     name="technical-description"
                     placeholder="e.g., Cross-Site Scripting (XSS) in search bar due to improper input sanitization of query parameter 'q'."
                     rows={4}
+                    required 
                   />
                 </div>
               </CardContent>
