@@ -12,28 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { convertVulnerabilityDescriptionToPlainEnglish, type ConvertVulnerabilityDescriptionToPlainEnglishInput, type ConvertVulnerabilityDescriptionToPlainEnglishOutput } from '@/ai/flows/convert-vulnerability-description-to-plain-english';
-
-async function handleWebScan(formData: FormData): Promise<ConvertVulnerabilityDescriptionToPlainEnglishOutput | { error: string }> {
-  'use server';
-  const technicalDescription = formData.get('technical-description') as string;
-  const scanName = formData.get('scan-name-web') as string; // We are not using this yet
-  const webUrl = formData.get('web-url') as string; // We are not using this yet
-
-  if (!technicalDescription) {
-    return { error: "Technical description is required for AI analysis." };
-  }
-
-  try {
-    const input: ConvertVulnerabilityDescriptionToPlainEnglishInput = { technicalDescription };
-    const result = await convertVulnerabilityDescriptionToPlainEnglish(input);
-    return result;
-  } catch (e) {
-    console.error("Error calling AI flow:", e);
-    return { error: "Failed to get AI analysis. Please try again." };
-  }
-}
-
+import { type ConvertVulnerabilityDescriptionToPlainEnglishOutput } from '@/ai/flows/convert-vulnerability-description-to-plain-english';
+import { handleWebScanAction } from './actions';
 
 export default function NewScanPage() {
   const [isPending, startTransition] = useTransition();
@@ -45,7 +25,7 @@ export default function NewScanPage() {
     setAiResult(null);
     setAiError(null);
     startTransition(async () => {
-      const result = await handleWebScan(formData);
+      const result = await handleWebScanAction(formData);
       if ('error' in result) {
         setAiError(result.error);
         toast({
@@ -145,7 +125,7 @@ export default function NewScanPage() {
                         </div>
                         <Input id="app-file-upload" type="file" className="hidden" />
                     </label>
-                </div> 
+                </div>
               </div>
             </CardContent>
             <CardFooter>

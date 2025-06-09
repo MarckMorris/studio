@@ -11,27 +11,8 @@ import { Brain, ShieldCheck, Lightbulb } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { suggestFix, type SuggestFixInput, type SuggestFixOutput } from '@/ai/flows/suggest-fix';
-
-async function handleSuggestFix(formData: FormData): Promise<SuggestFixOutput | { error: string }> {
-  'use server';
-  const vulnerabilityDescription = formData.get('vulnerability-description') as string;
-  const technologyStack = formData.get('technology-stack') as string;
-  const codeSnippet = formData.get('code-snippet') as string;
-
-  if (!vulnerabilityDescription || !technologyStack) { // Code snippet can be optional
-    return { error: "Vulnerability description and technology stack are required." };
-  }
-
-  try {
-    const input: SuggestFixInput = { vulnerabilityDescription, technologyStack, codeSnippet };
-    const result = await suggestFix(input);
-    return result;
-  } catch (e) {
-    console.error("Error calling AI flow for fix suggestion:", e);
-    return { error: "Failed to get AI fix suggestion. Please try again." };
-  }
-}
+import { type SuggestFixOutput } from '@/ai/flows/suggest-fix';
+import { handleSuggestFixAction } from './actions';
 
 export default function RecommendationsPage() {
   const [isPending, startTransition] = useTransition();
@@ -43,7 +24,7 @@ export default function RecommendationsPage() {
     setFixSuggestion(null);
     setFixError(null);
     startTransition(async () => {
-      const result = await handleSuggestFix(formData);
+      const result = await handleSuggestFixAction(formData);
       if ('error' in result) {
         setFixError(result.error);
         toast({

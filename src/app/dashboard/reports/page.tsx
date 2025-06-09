@@ -10,25 +10,9 @@ import { Brain, FileText } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { generateReportSummary, type GenerateReportSummaryInput, type GenerateReportSummaryOutput } from '@/ai/flows/generate-report-summary';
+import { type GenerateReportSummaryOutput } from '@/ai/flows/generate-report-summary';
+import { handleGenerateSummaryAction } from './actions';
 
-async function handleGenerateSummary(formData: FormData): Promise<GenerateReportSummaryOutput | { error: string }> {
-  'use server';
-  const reportText = formData.get('report-text') as string;
-
-  if (!reportText) {
-    return { error: "Report text is required to generate a summary." };
-  }
-
-  try {
-    const input: GenerateReportSummaryInput = { report: reportText };
-    const result = await generateReportSummary(input);
-    return result;
-  } catch (e) {
-    console.error("Error calling AI flow for report summary:", e);
-    return { error: "Failed to generate AI summary. Please try again." };
-  }
-}
 
 export default function ReportsPage() {
   const [isPending, startTransition] = useTransition();
@@ -40,7 +24,7 @@ export default function ReportsPage() {
     setSummaryResult(null);
     setSummaryError(null);
     startTransition(async () => {
-      const result = await handleGenerateSummary(formData);
+      const result = await handleGenerateSummaryAction(formData);
       if ('error' in result) {
         setSummaryError(result.error);
         toast({
