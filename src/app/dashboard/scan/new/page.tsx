@@ -1,13 +1,68 @@
+
+"use client";
+
+import React, { useState, useTransition } from 'react';
 import { PageHeader } from "@/components/shared/PageHeader";
-import { EmptyState } from "@/components/shared/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Zap, Globe, Smartphone, UploadCloud } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Zap, Globe, Smartphone, UploadCloud, Brain } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
+import { convertVulnerabilityDescriptionToPlainEnglish, type ConvertVulnerabilityDescriptionToPlainEnglishInput, type ConvertVulnerabilityDescriptionToPlainEnglishOutput } from '@/ai/flows/convert-vulnerability-description-to-plain-english';
+
+async function handleWebScan(formData: FormData): Promise<ConvertVulnerabilityDescriptionToPlainEnglishOutput | { error: string }> {
+  'use server';
+  const technicalDescription = formData.get('technical-description') as string;
+  const scanName = formData.get('scan-name-web') as string; // We are not using this yet
+  const webUrl = formData.get('web-url') as string; // We are not using this yet
+
+  if (!technicalDescription) {
+    return { error: "Technical description is required for AI analysis." };
+  }
+
+  try {
+    const input: ConvertVulnerabilityDescriptionToPlainEnglishInput = { technicalDescription };
+    const result = await convertVulnerabilityDescriptionToPlainEnglish(input);
+    return result;
+  } catch (e) {
+    console.error("Error calling AI flow:", e);
+    return { error: "Failed to get AI analysis. Please try again." };
+  }
+}
+
 
 export default function NewScanPage() {
+  const [isPending, startTransition] = useTransition();
+  const { toast } = useToast();
+  const [aiResult, setAiResult] = useState<ConvertVulnerabilityDescriptionToPlainEnglishOutput | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  const onWebScanSubmit = (formData: FormData) => {
+    setAiResult(null);
+    setAiError(null);
+    startTransition(async () => {
+      const result = await handleWebScan(formData);
+      if ('error' in result) {
+        setAiError(result.error);
+        toast({
+          title: "Scan Error",
+          description: result.error,
+          variant: "destructive",
+        });
+      } else {
+        setAiResult(result);
+        toast({
+          title: "AI Analysis Complete",
+          description: "Plain English description generated.",
+        });
+      }
+    });
+  };
+
   return (
     <>
       <PageHeader
@@ -20,26 +75,53 @@ export default function NewScanPage() {
           <TabsTrigger value="mobile"><Smartphone className="mr-2 h-4 w-4" />Mobile Application</TabsTrigger>
         </TabsList>
         <TabsContent value="web">
-          <Card>
-            <CardHeader>
-              <CardTitle>Scan Web Application</CardTitle>
-              <CardDescription>Enter the URL of your web application to begin scanning.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-1">
-                <Label htmlFor="web-url">Application URL</Label>
-                <Input id="web-url" placeholder="https://example.com" />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="scan-name-web">Scan Name (Optional)</Label>
-                <Input id="scan-name-web" placeholder="My Awesome App Scan" />
-              </div>
-              {/* Add more web-specific options here, e.g., authentication, scan depth */}
-            </CardContent>
-            <CardFooter>
-              <Button className="w-full"><Zap className="mr-2 h-4 w-4" />Start Web Scan</Button>
-            </CardFooter>
-          </Card>
+          <form action={onWebScanSubmit}>
+            <Card>
+              <CardHeader>
+                <CardTitle>Scan Web Application</CardTitle>
+                <CardDescription>Enter the URL and a technical vulnerability description for AI analysis.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-1">
+                  <Label htmlFor="web-url">Application URL</Label>
+                  <Input id="web-url" name="web-url" placeholder="https://example.com" />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="scan-name-web">Scan Name (Optional)</Label>
+                  <Input id="scan-name-web" name="scan-name-web" placeholder="My Awesome App Scan" />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="technical-description">Technical Vulnerability Description (for AI Demo)</Label>
+                  <Textarea
+                    id="technical-description"
+                    name="technical-description"
+                    placeholder="e.g., Cross-Site Scripting (XSS) in search bar due to improper input sanitization of query parameter 'q'."
+                    rows={4}
+                  />
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button type="submit" className="w-full" disabled={isPending}>
+                  {isPending ? "Scanning..." : <><Zap className="mr-2 h-4 w-4" />Start Web Scan & AI Analysis</>}
+                </Button>
+              </CardFooter>
+            </Card>
+          </form>
+          {aiResult && (
+            <Alert className="mt-6">
+              <Brain className="h-4 w-4" />
+              <AlertTitle>AI-Generated Plain English Description</AlertTitle>
+              <AlertDescription>
+                <p className="mt-2 whitespace-pre-wrap">{aiResult.plainEnglishDescription}</p>
+              </AlertDescription>
+            </Alert>
+          )}
+          {aiError && (
+            <Alert variant="destructive" className="mt-6">
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{aiError}</AlertDescription>
+            </Alert>
+          )}
         </TabsContent>
         <TabsContent value="mobile">
           <Card>
@@ -65,10 +147,9 @@ export default function NewScanPage() {
                     </label>
                 </div> 
               </div>
-              {/* Add more mobile-specific options here, e.g., platform type */}
             </CardContent>
             <CardFooter>
-              <Button className="w-full"><Zap className="mr-2 h-4 w-4" />Start Mobile Scan</Button>
+              <Button className="w-full" disabled><Zap className="mr-2 h-4 w-4" />Start Mobile Scan (Coming Soon)</Button>
             </CardFooter>
           </Card>
         </TabsContent>
