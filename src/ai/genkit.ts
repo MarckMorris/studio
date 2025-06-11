@@ -6,7 +6,8 @@ console.log("Initializing Genkit with Google AI plugin...");
 
 export const ai = genkit({
   plugins: [googleAI()],
-  model: 'googleai/gemini-pro', // Changed from gemini-2.0-flash
+  model: 'googleai/gemini-1.5-flash-latest', // Changed from gemini-pro
 });
 
-console.log("Genkit initialized. Default model set to: googleai/gemini-pro");
+console.log("Genkit initialized. Default model set to: googleai/gemini-1.5-flash-latest");
+

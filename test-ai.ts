@@ -1,3 +1,4 @@
+
 // test-ai.ts
 import { config } from 'dotenv';
 config(); // Load .env file from project root
@@ -14,10 +15,13 @@ async function runTest() {
   console.log('GOOGLE_API_KEY is present (length:', process.env.GOOGLE_API_KEY.length, ') - value is masked for security.');
 
   try {
-    console.log('Attempting to generate text with AI model:', ai.model);
+    // The default model from genkit.ts will be used if not specified here,
+    // but for clarity in testing, we can specify it.
+    const testModel = 'googleai/gemini-1.5-flash-latest';
+    console.log('Attempting to generate text with AI model:', testModel); 
     const { text } = await ai.generate({
       prompt: 'Translate "hello world" to Spanish.',
-      model: 'googleai/gemini-pro', // Ensure this matches your genkit.ts or is a valid model for your key
+      model: testModel, 
     });
     console.log('SUCCESS! AI Response:', text);
   } catch (e: any) {
@@ -45,3 +49,4 @@ async function runTest() {
 }
 
 runTest();
+
